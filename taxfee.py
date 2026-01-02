@@ -39,23 +39,22 @@ with st.container():
         rent = st.number_input("比較用の家賃（月/円）", value=140000, step=5000)
         income = st.number_input("世帯年収（万円）", value=600, step=50)
 
-# --- タブ分け（ご指定の順番：1.売買詳細 2.賃貸詳細 3.比較） ---
-tab1, tab2, tab3 = st.tabs(["🏠 1. 売買（購入）の詳細", "🏢 2. 賃貸（入居）の詳細", "⚖️ 3. 賃貸 VS 購入"])
-
 # --- 計算ロジック ---
 # 売買関連
 broker_fee = (price * 0.03 + 6) * 1.1
-reg_tax = price * 0.015
-judicial_scrivener = 10.0
+reg_tax = price * 0.015  # 登録免許税（概算）
+judicial_scrivener = 10.0 # 司法書士報酬（概算）
 bank_fee = loan_amount * 0.022
-stamp_duty = 2.0
-insurance = 15.0
+stamp_duty = 2.0 # 印紙税
+insurance = 15.0 # 火災保険料
+
+# 合計諸経費の再定義
 total_buy_fee = broker_fee + reg_tax + judicial_scrivener + bank_fee + stamp_duty + insurance
+
 deduction_annual = min(loan_amount * 0.007, income * 0.05 + 13.5, 21.0)
 monthly_repay = (loan_amount*10000*(0.005/12)*(1+0.005/12)**420)/((1+0.005/12)**420-1)
 
 # 賃貸関連
-# 修正箇所：末尾の 2.0 を 20000 (2万円) に変更（火災保険・保証料等の概算）
 rent_initial = (rent * 4) + (rent * 0.5) + 20000
 
 # ---------------------------------------------------------
@@ -68,15 +67,17 @@ with tab1:
     with c1:
         st.markdown(f'<p class="result-label">概算諸経費 合計</p><p class="result-value">{total_buy_fee:.1f} 万円</p>', unsafe_allow_html=True)
         with st.expander("🔍 内訳を確認"):
+            # 修正箇所：登記・保険・印紙等を3つに分解して表示
             st.markdown(f"""
             ・仲介手数料： {broker_fee:.1f}万円<br>
             ・融資事務手数料： {bank_fee:.1f}万円<br>
-            ・登記・保険・印紙等： {reg_tax + judicial_scrivener + insurance + stamp_duty:.1f}万円
+            ・登録免許税・司法書士： {reg_tax + judicial_scrivener:.1f}万円<br>
+            ・火災保険料： {insurance:.1f}万円<br>
+            ・印紙税： {stamp_duty:.1f}万円
             """, unsafe_allow_html=True)
     with c2:
         st.markdown(f'<p class="result-label">ローン控除（年間最大）</p><p class="result-value" style="color:#27ae60;">+{deduction_annual:.1f} 万円</p>', unsafe_allow_html=True)
     
-    # 修正箇所：/1000 を削除し、単位を「円」に変更
     st.write(f"**月々のローン返済額: 約 {int(monthly_repay):,} 円**")
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -91,7 +92,6 @@ with tab2:
         st.write(f"・前賃料・敷金・礼金・仲介料（4ヶ月）: {rent*4/10000:.1f}万円")
         st.write(f"・保証会社初回・火災保険他: { (rent*0.5 + 20000)/10000:.1f}万円")
     
-    # 修正箇所：/1000 を削除し、単位を「円」に変更
     st.write(f"**月々の支払額: 約 {int(rent+10000):,} 円**（管理費込）")
     st.markdown('</div>', unsafe_allow_html=True)
 
