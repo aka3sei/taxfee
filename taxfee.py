@@ -39,13 +39,36 @@ with st.container():
         rent = st.number_input("比較用の家賃（月/円）", value=140000, step=5000)
         income = st.number_input("世帯年収（万円）", value=600, step=50)
 
-# --- 【重要】計算ロジック（ここを先に書く） ---
+# --- 【重要】計算ロジック ---
 # 売買関連
 broker_fee = (price * 0.03 + 6) * 1.1
 reg_tax = price * 0.015  # 登録免許税（概算）
 judicial_scrivener = 10.0 # 司法書士報酬（概算）
 bank_fee = loan_amount * 0.022
-stamp_duty = 2.0 # 印紙税
+
+# --- 印紙税の修正ロジック ---
+# 1. 売買契約書（軽減税率）
+if price <= 5000:
+    base_stamp = 1.0
+elif price <= 10000:
+    base_stamp = 3.0
+else:
+    base_stamp = 6.0
+
+# 2. ローン契約書（金銭消費貸借契約：非軽減）
+# 借入がある場合のみ加算
+loan_stamp = 0.0
+if loan_amount > 0:
+    if loan_amount <= 5000:
+        loan_stamp = 2.0
+    elif loan_amount <= 10000:
+        loan_stamp = 6.0
+    else:
+        loan_stamp = 10.0
+
+stamp_duty = base_stamp + loan_stamp
+# -------------------------
+
 insurance = 15.0 # 火災保険料
 
 total_buy_fee = broker_fee + reg_tax + judicial_scrivener + bank_fee + stamp_duty + insurance
@@ -55,7 +78,7 @@ monthly_repay = (loan_amount*10000*(0.005/12)*(1+0.005/12)**420)/((1+0.005/12)**
 # 賃貸関連
 rent_initial = (rent * 4) + (rent * 0.5) + 20000
 
-# --- 【重要】タブの定義（withの前に必ず必要） ---
+# --- タブの定義 ---
 tab1, tab2, tab3 = st.tabs(["🏠 1. 売買（購入）の詳細", "🏢 2. 賃貸（入居）の詳細", "⚖️ 3. 賃貸 VS 購入"])
 
 # ---------------------------------------------------------
@@ -73,7 +96,7 @@ with tab1:
             ・融資事務手数料： {bank_fee:.1f}万円<br>
             ・登録免許税・司法書士： {reg_tax + judicial_scrivener:.1f}万円<br>
             ・火災保険料： {insurance:.1f}万円<br>
-            ・印紙税： {stamp_duty:.1f}万円
+            ・印紙税： {stamp_duty:.1f}万円（売買{base_stamp}万 + ローン{loan_stamp}万）
             """, unsafe_allow_html=True)
     with c2:
         st.markdown(f'<p class="result-label">ローン控除（年間最大）</p><p class="result-value" style="color:#27ae60;">+{deduction_annual:.1f} 万円</p>', unsafe_allow_html=True)
