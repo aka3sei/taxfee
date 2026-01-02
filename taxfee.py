@@ -33,8 +33,8 @@ st.markdown('<div class="main-header">⚖️ 賃貸 VS 購入 シミュレータ
 with st.container():
     col1, col2 = st.columns(2)
     with col1:
-        price = st.number_input("物件価格（万円）", value=4500, step=100)
-        loan_amount = st.number_input("ローン借入額（万円）", value=4500, step=100)
+        price = st.number_input("物件価格（万円）", value=5000, step=100)
+        loan_amount = st.number_input("ローン借入額（万円）", value=5000, step=100)
     with col2:
         rent = st.number_input("比較用の家賃（月/円）", value=140000, step=5000)
         income = st.number_input("世帯年収（万円）", value=600, step=50)
@@ -42,12 +42,13 @@ with st.container():
 # --- 【重要】計算ロジック ---
 # 売買関連
 broker_fee = (price * 0.03 + 6) * 1.1
-reg_tax = price * 0.015  # 登録免許税（概算）
-judicial_scrivener = 10.0 # 司法書士報酬（概算）
 bank_fee = loan_amount * 0.022
 
-# --- 印紙税の修正ロジック ---
-# 1. 売買契約書（軽減税率）
+# 登記関連を分解（修正箇所）
+reg_tax_only = price * 0.013  # 登録免許税のみ（概算1.3%）
+judicial_scrivener_fee = 10.0 # 司法書士報酬（固定概算）
+
+# 印紙税（最新の合算ロジック）
 if price <= 5000:
     base_stamp = 1.0
 elif price <= 10000:
@@ -55,8 +56,6 @@ elif price <= 10000:
 else:
     base_stamp = 6.0
 
-# 2. ローン契約書（金銭消費貸借契約：非軽減）
-# 借入がある場合のみ加算
 loan_stamp = 0.0
 if loan_amount > 0:
     if loan_amount <= 5000:
@@ -65,13 +64,12 @@ if loan_amount > 0:
         loan_stamp = 6.0
     else:
         loan_stamp = 10.0
-
 stamp_duty = base_stamp + loan_stamp
-# -------------------------
 
 insurance = 15.0 # 火災保険料
 
-total_buy_fee = broker_fee + reg_tax + judicial_scrivener + bank_fee + stamp_duty + insurance
+# 全体合計
+total_buy_fee = broker_fee + reg_tax_only + judicial_scrivener_fee + bank_fee + stamp_duty + insurance
 deduction_annual = min(loan_amount * 0.007, income * 0.05 + 13.5, 21.0)
 monthly_repay = (loan_amount*10000*(0.005/12)*(1+0.005/12)**420)/((1+0.005/12)**420-1)
 
@@ -91,10 +89,12 @@ with tab1:
     with c1:
         st.markdown(f'<p class="result-label">概算諸経費 合計</p><p class="result-value">{total_buy_fee:.1f} 万円</p>', unsafe_allow_html=True)
         with st.expander("🔍 内訳を確認"):
+            # 修正箇所：登記関連を2つに分けて表示
             st.markdown(f"""
             ・仲介手数料： {broker_fee:.1f}万円<br>
             ・融資事務手数料： {bank_fee:.1f}万円<br>
-            ・登録免許税・司法書士： {reg_tax + judicial_scrivener:.1f}万円<br>
+            ・登録免許税（税金）： {reg_tax_only:.1f}万円<br>
+            ・司法書士報酬： {judicial_scrivener_fee:.1f}万円<br>
             ・火災保険料： {insurance:.1f}万円<br>
             ・印紙税： {stamp_duty:.1f}万円（売買{base_stamp}万 + ローン{loan_stamp}万）
             """, unsafe_allow_html=True)
