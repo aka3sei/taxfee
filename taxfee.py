@@ -101,7 +101,7 @@ with tab1:
     with c2:
         st.markdown(f'<p class="result-label">ローン控除（年間最大）</p><p class="result-value" style="color:#27ae60;">+{deduction_annual:.1f} 万円</p>', unsafe_allow_html=True)
     
-    st.write(f"**月々のローン返済額: 約 {int(monthly_repay):,} 円**")
+    st.write(f"**月々のローン返済額（借入金利0.5%）: 約 {int(monthly_repay):,} 円**")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
@@ -138,3 +138,4 @@ with tab3:
         st.warning(f"💡 賃貸の方が {diff:,}万円 支出を抑えられます。")
 
 st.info("※本数値は概算です。正確な資金計画は担当者へご相談ください。")
+
